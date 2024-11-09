@@ -15,7 +15,8 @@ $routesWithParams = [
     '/api/v1/getUser',
     '/api/v1/sentMessages',
     '/api/v1/getLessons',
-    '/api/v1/receivedMessages'
+    '/api/v1/receivedMessages',
+    '/api/v1/profile'
 ];
 
 if (!array_key_exists($path, $apiRoutes)) {

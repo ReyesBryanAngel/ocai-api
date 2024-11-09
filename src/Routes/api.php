@@ -1,6 +1,8 @@
 <?php
 use src\Controllers\AdminController;
 use src\Controllers\TeacherController;
+use src\Controllers\Auth\AuthController;
+
 
 $apiRoutes = [
     '/api/v1/addUser' => [new AdminController(), 'AddUser'],
@@ -16,6 +18,11 @@ $apiRoutes = [
     '/api/v1/receivedMessages' => [new AdminController(), 'receivedMessages'],
     '/api/v1/deleteMessages' => [new AdminController(), 'deleteMessages'],
     '/api/v1/archiveMessages' => [new AdminController(), 'archiveMessages'],
-    '/api/v1/retrieveMessages' => [new AdminController(), 'retrieveMessages']
+    '/api/v1/retrieveMessages' => [new AdminController(), 'retrieveMessages'],
+
+    // Auth
+    '/api/v1/login' => [new AuthController(), 'login'],
+    '/api/v1/profile' => [new AuthController(), 'profile'],
+    '/api/v1/logout' => [new AuthController(), 'logout'],
 ];
 

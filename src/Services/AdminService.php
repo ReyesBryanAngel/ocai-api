@@ -22,7 +22,7 @@ class AdminService {
         $role,
         $contactNumber,
         $homeAddress,
-        $isArchived,
+        // $isArchived,
     )
     {
         try {
@@ -40,7 +40,7 @@ class AdminService {
                 username,
                 password,
                 photo,
-                isArchived
+                -- isArchived
             ) VALUES (
                 :schoolId,
                 :lastName,
@@ -53,7 +53,7 @@ class AdminService {
                 :username,
                 :password,
                 :photo,
-                :isArchived
+                -- :isArchived
             )";
             
             $stmt = $this->conn->prepare($sql);
@@ -68,7 +68,7 @@ class AdminService {
             $stmt->bindParam(':username', $username);
             $stmt->bindParam(':password', $password);
             $stmt->bindParam(':photo', $photo);
-            $stmt->bindParam(':isArchived', $isArchived);
+            // $stmt->bindParam(':isArchived', $isArchived);
             $stmt->execute();
 
             $this->conn->commit();

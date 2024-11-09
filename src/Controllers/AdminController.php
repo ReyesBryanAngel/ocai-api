@@ -36,7 +36,7 @@ class AdminController {
         $username = $payload['username'] ?? null;
         $password = $payload['password'] ?? null;
         $photo = $payload['photo'] ?? null;
-        $isArchived = $payload['isArchived'] ? 1 : 0;
+        // $isArchived = $payload['isArchived'] ? 1 : 0;
 
         $this->adminService->addUser(
             $schoolId,
@@ -50,7 +50,7 @@ class AdminController {
             $role,
             $contactNumber,
             $homeAddress,
-            $isArchived,
+            // $isArchived,
         );
 
         $this->utils->jsonResponse([
@@ -162,6 +162,14 @@ class AdminController {
         ], 201);
     }
 
+    //ARCHIVING
+    public function archiveUser ()
+
+    {
+
+    }
+
+    //MESSAGES
     public function sentMessages()
     {
         $id = $_GET['userId'] ?? null;
