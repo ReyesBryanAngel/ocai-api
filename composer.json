@@ -1,0 +1,22 @@
+{
+    "name": "ocai/api",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "src\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "aulrich reyes"
+        }
+    ],
+    "require": {
+        "symfony/validator": "^7.1",
+        "firebase/php-jwt": "^6.10",
+        "phpmailer/phpmailer": "^6.9",
+        "robmorgan/phinx": "^0.16.5",
+        "symfony/yaml": "^7.1",
+        "vlucas/phpdotenv": "^5.6"
+    }
+}
