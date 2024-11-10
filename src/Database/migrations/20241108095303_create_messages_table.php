@@ -25,7 +25,7 @@ final class CreateMessagesTable extends AbstractMigration
               ->addForeignKey('userId', 'users', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
               ->addColumn('recipientId', 'integer', ['limit' => 11, 'null' => true])
               ->addColumn('recipientType', 'enum', [
-                  'values' => ['Admin', 'Student'],
+                  'values' => ['Admin', 'Student', 'Teacher'],
                   'null' => true
               ])
               ->addColumn('encryptedMessage', 'text', ['null' => false])

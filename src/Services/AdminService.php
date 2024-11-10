@@ -1,20 +1,39 @@
 <?php
 namespace src\Services;
-
+use src\Utils\Enums;
+use src\Utils\OcaiUtilities;
 use PDO;
 
 class AdminService {
     private $conn;
 
+    private $utils;
     public function __construct(PDO $conn) {
         $this->conn = $conn;
+        $this->utils = new OcaiUtilities();
+    }
+
+    public function addSection($sectionName)
+    {
+        try {
+            $this->conn->beginTransaction();
+
+            $sql = "INSERT INTO sections (name) VALUES(:sectionName)";
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(":sectionName", $sectionName);
+            $stmt->execute();
+            $this->conn->commit();
+        } catch (\Exception $e) {
+            $this->conn->rollBack();
+            throw new \Exception("Insert section failed: " . $e->getMessage());
+        }
     }
 
     public function addUser(
         $schoolId,
         $username,
         $password,
-        $photo,
         $lastName,
         $firstName,
         $middleName,
@@ -22,39 +41,54 @@ class AdminService {
         $role,
         $contactNumber,
         $homeAddress,
-        // $isArchived,
+        $sectionId = null,
+        $guardianName = null,
+        $guardianContact = null,
+        $disability = null
     )
     {
         try {
             $this->conn->beginTransaction();
-
-            $sql = "INSERT INTO users (
-                schoolId,
-                lastName,
-                firstName,
-                middleName,
-                gender,
-                role,
-                contactNumber,
-                homeAddress,
-                username,
-                password,
-                photo,
-                -- isArchived
-            ) VALUES (
-                :schoolId,
-                :lastName,
-                :firstName,
-                :middleName,
-                :gender,
-                :role,
-                :contactNumber,
-                :homeAddress,
-                :username,
-                :password,
-                :photo,
-                -- :isArchived
-            )";
+    
+            $fields = [
+                'schoolId',
+                'lastName',
+                'firstName',
+                'middleName',
+                'gender',
+                'role',
+                'contactNumber',
+                'homeAddress',
+                'username',
+                'password'
+            ];
+            
+            $placeholders = [
+                ':schoolId',
+                ':lastName',
+                ':firstName',
+                ':middleName',
+                ':gender',
+                ':role',
+                ':contactNumber',
+                ':homeAddress',
+                ':username',
+                ':password'
+            ];
+            
+            if ($role === Enums::STUDENT->value) {
+                $fields[] = 'sectionId';
+                $fields[] = 'guardianName';
+                $fields[] = 'guardianContact';
+                $fields[] = 'disability';
+                
+                $placeholders[] = ':sectionId';
+                $placeholders[] = ':guardianName';
+                $placeholders[] = ':guardianContact';
+                $placeholders[] = ':disability';
+            }
+    
+            $sql = "INSERT INTO users (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
             
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':schoolId', $schoolId);
@@ -67,18 +101,23 @@ class AdminService {
             $stmt->bindParam(':homeAddress', $homeAddress);
             $stmt->bindParam(':username', $username);
             $stmt->bindParam(':password', $password);
-            $stmt->bindParam(':photo', $photo);
-            // $stmt->bindParam(':isArchived', $isArchived);
+    
+            if ($role === Enums::STUDENT->value) {
+                $stmt->bindParam(':sectionId', $sectionId);
+                $stmt->bindParam(':guardianName', $guardianName);
+                $stmt->bindParam(':guardianContact', $guardianContact);
+                $stmt->bindParam(':disability', $disability);
+            }
+    
             $stmt->execute();
-
             $this->conn->commit();
-            
-
+    
         } catch (\Exception $e) {
             $this->conn->rollBack();
-            throw new \Exception("Insert user failed" . $e->getMessage());
+            throw new \Exception("Insert user failed: " . $e->getMessage());
         }
     }
+    
 
     public function editUser(
         $id,
@@ -143,7 +182,7 @@ class AdminService {
         try {
             $this->conn->beginTransaction();
 
-            $sql = "SELECT * FROM users";
+            $sql = "SELECT * FROM users WHERE role != 'Admin'";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
             $data = $stmt->fetchAll(mode: PDO::FETCH_ASSOC);
@@ -177,6 +216,7 @@ class AdminService {
         }
     }
 
+    //MESSAGES
     public function sendMessage($userId, $recipientId, $encryptedMessage)
     {
        try {
@@ -244,7 +284,7 @@ class AdminService {
         }
     }
 
-    public function deleteMessages($userId, $messageIds)
+    public function deleteMessages($messageIds)
     {
         if (empty($messageIds)) {
             throw new \Exception("No messages selected for deletion.");
@@ -254,10 +294,10 @@ class AdminService {
             $this->conn->beginTransaction();
             $placeholders = implode(',', array_fill(0, count($messageIds), '?'));
 
-            $sql = "UPDATE messages SET isDeleted = true WHERE id IN ($placeholders) AND userId = ?";
+            $sql = "UPDATE messages SET isDeleted = true WHERE id IN ($placeholders)";
             $stmt = $this->conn->prepare($sql);
 
-            $stmt->execute([...$messageIds, $userId]);
+            $stmt->execute([...$messageIds]);
             $this->conn->commit();
         } catch (\Exception $e) {
             $this->conn->rollBack();
@@ -305,6 +345,67 @@ class AdminService {
             $this->conn->rollBack();
             throw new \Exception("Error archiving messages: " . $e->getMessage());
         }
+    }
+
+    public function archiveUser($userIds)
+    {
+        if (empty($userIds)) {
+            throw new \Exception("No messages selected for deletion.");
+        }
+ 
+        try {   
+            $this->conn->beginTransaction();
+            $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+
+            $sql = "UPDATE users SET isArchived = true WHERE id IN ($placeholders) AND role != ?";
+            $stmt = $this->conn->prepare($sql);
+
+            $stmt->execute([...$userIds, Enums::ADMIN->value]);
+            $this->conn->commit();
+        } catch (\Exception $e) {
+            $this->conn->rollBack();
+            throw new \Exception("Error archiving users: " . $e->getMessage());
+        }
+    }
+
+    public function retrieveUser($userIds)
+    {
+        if (empty($userIds)) {
+            throw new \Exception("No messages selected for deletion.");
+        }
+ 
+        try {   
+            $this->conn->beginTransaction();
+            $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+
+            $sql = "UPDATE users SET isArchived = false WHERE id IN ($placeholders) AND role != ?";
+            $stmt = $this->conn->prepare($sql);
+
+            $stmt->execute([...$userIds, Enums::ADMIN->value]);
+            $this->conn->commit();
+        } catch (\Exception $e) {
+            $this->conn->rollBack();
+            throw new \Exception("Error archiving users: " . $e->getMessage());
+        }
+    }
+
+    public function archivedUsers()
+    {
+        try {
+            $this->conn->beginTransaction();
+
+            $sql = "SELECT * FROM users WHERE isArchived IS TRUE";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            $data = $stmt->fetchAll(mode: PDO::FETCH_ASSOC);
+            
+            $this->conn->commit();
+
+            return $data ?? [];
+        } catch (\Exception $e) {
+            $this->conn->rollBack();
+            throw new \Exception("Get users failed" . $e->getMessage());
+        } 
     }
 
 }

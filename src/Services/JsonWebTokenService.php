@@ -16,7 +16,7 @@ class JsonWebTokenService {
     }    
     public function generateToken($payload, $algorithm = 'HS256') {
         $issuedAt = time();
-        $expirationTime = $issuedAt + (60 * 15);
+        $expirationTime = $issuedAt + (60 * 60);
         $payload['iat'] = $issuedAt;
         $payload['exp'] = $expirationTime;
     

@@ -22,7 +22,9 @@ final class CreateUsersTable extends AbstractMigration
         {
             $table = $this->table('users', ['signed' => false]);
     
-            $table->addColumn('schoolId', 'string', ['limit' => 50, 'null' => true])
+            $table->addColumn('sectionId', 'integer',  ['signed' => false])
+                ->addForeignKey('sectionId', 'sections', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
+                ->addColumn('schoolId', 'string', ['limit' => 50, 'null' => true])
                 ->addColumn('lastName', 'string', ['limit' => 50, 'null' => true])
                 ->addColumn('firstName', 'string', ['limit' => 50, 'null' => true])
                 ->addColumn('middleName', 'string', ['limit' => 50, 'null' => true])
@@ -31,9 +33,21 @@ final class CreateUsersTable extends AbstractMigration
                 ->addColumn('contactNumber', 'string', ['limit' => 15, 'null' => true])
                 ->addColumn('homeAddress', 'text', ['null' => true])
                 ->addColumn('username', 'string', ['limit' => 50, 'null' => true])
-                ->addColumn('password', 'string', ['limit' => 255, 'null' => true])
-                ->addColumn('photo', 'string', ['limit' => 255, 'null' => true])
+                ->addColumn('password', 'string', ['limit' => 100, 'null' => true])
+                ->addColumn('fileName', 'string', ['limit' => 100, 'null' => true])
+                ->addColumn('filePath', 'text', ['limit' => 100, 'null' => true])
+                ->addColumn('fileType', 'string', ['limit' => 50, 'null' => true])
                 ->addColumn('isArchived', 'boolean', ['default' => false])
+                ->addColumn('guardianName', 'string', ['null' => true])
+                ->addColumn('guardianContact', 'string', ['limit' => 20, 'null' => true])
+                ->addColumn('disability', 'enum', [
+                    'values' => [
+                        'Hearing Impairment', 'Visual Impairment', 'Cognitive Disability',
+                        'Physical Disability', 'Speech Impairment', 'Autism Spectrum',
+                        'Learning Disability', 'Emotional/Behavioral Disorder'
+                    ],
+                    'null' => true
+                ])
                 ->addTimestamps()
                 ->create();
         }

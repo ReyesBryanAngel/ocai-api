@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Phinx\Migration\AbstractMigration;
 
-final class CreateLessonsTable extends AbstractMigration
+final class CreateChoicesTable extends AbstractMigration
 {
     /**
      * Change Method.
@@ -19,15 +19,17 @@ final class CreateLessonsTable extends AbstractMigration
      */
     public function change(): void
     {
-        $table = $this->table('lessons', ['signed' => false]);
-        
-        $table->addColumn('userId', 'integer',  ['signed' => false])
+        $table = $this->table('choices', ['signed' => false]);
+        $table->addColumn('userId', 'integer', ['signed' => false])
               ->addForeignKey('userId', 'users', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
-              ->addColumn('lessonName', 'string', ['limit' => 100, 'null' => true])
-              ->addColumn('description', 'text', ['null' => true])
-              ->addColumn('coverPic', 'string', ['null' => true])
-              ->addColumn('isVisible', 'boolean', ['default' => false])
+              ->addColumn('questionId', 'integer', ['signed' => false])
+              ->addForeignKey('questionId', 'questions', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
+              ->addColumn('filePath', 'text', ['limit' => 100, 'null' => true])
+              ->addColumn("choice", 'enum', [
+                    'values' => ['A', 'B', 'C', 'D'],
+                    'null' => true
+              ])
               ->addTimestamps()
-              ->create();
+        ->create();
     }
 }

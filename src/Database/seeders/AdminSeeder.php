@@ -31,7 +31,9 @@ class AdminSeeder extends AbstractSeed
                 'homeAddress' => '123 Main St, Springfield',
                 'username' => 'johndoe',
                 'password' => password_hash('password123', PASSWORD_DEFAULT), // hashed for security
-                'photo' => 'path/to/photo.jpg',
+                'fileName' => 'John-Image',
+                'filePath' => 'path/to/photo2.jpg',
+                'fileType' => 'png',
                 'isArchived' => 0,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
@@ -48,7 +50,9 @@ class AdminSeeder extends AbstractSeed
                 'homeAddress' => '456 Elm St, Springfield',
                 'username' => 'janesmith',
                 'password' => password_hash('securePass456', PASSWORD_DEFAULT),
-                'photo' => 'path/to/photo2.jpg',
+                'fileName' => 'Jane-Image',
+                'filePath' => 'path/to/photo2.jpg',
+                'fileType' => 'jpg',
                 'isArchived' => 0,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')

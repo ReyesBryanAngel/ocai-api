@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Phinx\Migration\AbstractMigration;
 
-final class CreateTopicsTable extends AbstractMigration
+final class CreateVideosTable extends AbstractMigration
 {
     /**
      * Change Method.
@@ -19,15 +19,13 @@ final class CreateTopicsTable extends AbstractMigration
      */
     public function change(): void
     {
-        $table = $this->table('topics', ['signed' => false]);
-
-        $table->addColumn('lessonId', 'integer', ['signed' => false])
-              ->addForeignKey('lessonId', 'lessons', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
-              ->addColumn('topicName', 'string', ['limit' => 100, 'null' => true])
-              ->addColumn('isLocked', 'boolean', ['null' => true])
-              ->addColumn('completed', 'boolean', ['default' => false])
+        $table = $this->table('videos', ['signed' => false]);
+        $table->addColumn('topicId', 'integer',  ['signed' => false])
+              ->addForeignKey('topicId', 'topics', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
+              ->addColumn('fileName', 'string', ['limit' => 100, 'null' => true])
+              ->addColumn('filePath', 'text', ['limit' => 100, 'null' => true])
+              ->addColumn('fileType', 'string', ['limit' => 50, 'null' => true])
               ->addTimestamps()
               ->create();
-              
     }
 }
