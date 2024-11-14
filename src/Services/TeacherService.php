@@ -1,29 +1,60 @@
 <?php
 namespace src\Services;
+
 use PDO;
+use src\Enums\RoleEnums;
+use src\Services\AdminService;
 use src\Utils\OcaiUtilities;
 
 class TeacherService {
     private $conn;
+
     private $utils;
+
+    private $adminService;
 
     public function __construct(PDO $conn) {
         $this->conn = $conn;
         $this->utils = new OcaiUtilities();
+        $this->adminService = new AdminService($this->conn);
     }
 
-    public function addLesson($userId, $lessonName, $description, $coverPic)
+    public function getSection($sectionId)
+    {
+        try {
+            $this->conn->beginTransaction();
+
+            $sql = "SELECT id FROM sections WHERE id = :sectionId";
+            $stmt = $this->conn->prepare($sql);
+
+            $stmt->bindParam(":sectionId", $sectionId);
+            $stmt->execute();
+            $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $this->conn->commit();
+
+            return $data ?? null;
+
+        } catch (\Exception $e) {
+            $this->conn->rollBack();
+            throw new \Exception("Get topic failed" . $e->getMessage());
+        }
+    }
+
+    public function addLesson($userId, $sectionId, $lessonName, $description, $coverPic)
     {
         try {
             $this->conn->beginTransaction();
 
             $sql = "INSERT INTO lessons (
                 userId,
+                sectionId,
                 lessonName,
                 description,
                 coverPic
             ) VALUES (
                 :userId,
+                :sectionId,
                 :lessonName,
                 :description,
                 :coverPic
@@ -31,6 +62,7 @@ class TeacherService {
 
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(":userId", $userId);
+            $stmt->bindParam(":sectionId", $sectionId);
             $stmt->bindParam(":lessonName", $lessonName);
             $stmt->bindParam(":description", $description);
             $stmt->bindParam(":coverPic", $coverPic);
@@ -43,15 +75,17 @@ class TeacherService {
         }
     }
 
-    public function getLessons($userId)
+    public function getLessons($userId, $sectionId)
     {
         try {
             $this->conn->beginTransaction();
 
-            $sql = "SELECT * FROM lessons WHERE userId = :userId";
+            $sql = "SELECT * FROM lessons WHERE userId = :userId AND sectionId = :sectionId";
 
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(":userId", $userId);
+            $stmt->bindParam(":sectionId", $sectionId);
+
             $stmt->execute();
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $this->conn->commit();
@@ -59,9 +93,10 @@ class TeacherService {
             return $data ?? [];
         } catch (\Exception $e) {
             $this->conn->rollBack();
-            throw new \Exception("Get lessons failed" . $e->getMessage());
+            throw new \Exception("Get lessons failed: " . $e->getMessage());
         }
     }
+
 
     public function addTopic($lessonId, $topicName, $isLocked)
     {
@@ -110,18 +145,20 @@ class TeacherService {
         }
     }
 
-    public function getTopics($userId)
+    public function getTopics($userId, $lessonId)
     {
         try {
             $this->conn->beginTransaction();
 
-            $sql = "SELECT topics.*
+            $sql = "SELECT *
                 FROM topics
                 JOIN lessons ON topics.lessonId = lessons.id
-                WHERE lessons.userId = :userId
-            ";
+                WHERE lessons.userId = :userId AND lessonId = :lessonId";
+
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(":userId", $userId);
+            $stmt->bindParam(":lessonId", $lessonId);
+
             $stmt->execute();
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $this->conn->commit();
@@ -138,7 +175,7 @@ class TeacherService {
         try {
             $this->conn->beginTransaction();
 
-            $sql = "SELECT * FROM topics WHERE id = :topicId";
+            $sql = "SELECT id FROM topics WHERE id = :topicId";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(":topicId", $topicId);
             $stmt->execute();
@@ -152,7 +189,7 @@ class TeacherService {
         }
     }
 
-    public function addActivity($topicId, $activityName, $timeLimit)
+    public function addActivity($topicId, $activityName, $minPassingRate, $timeLimit)
     {
         try {
             $this->conn->beginTransaction();
@@ -160,16 +197,19 @@ class TeacherService {
             $sql = "INSERT INTO activities (
                 topicId,
                 activityName,
+                minPassingRate,
                 timeLimit
             ) VALUES (
                 :topicId,
                 :activityName,
+                :minPassingRate,
                 :timeLimit
             )";
 
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(":topicId", $topicId);
             $stmt->bindParam(":activityName", $activityName);
+            $stmt->bindParam(":minPassingRate", $minPassingRate);
             $stmt->bindParam(":timeLimit", $timeLimit);
             $stmt->execute();
 
@@ -180,7 +220,7 @@ class TeacherService {
         }
     }
 
-    public function getActivities($userId)
+    public function getActivities($userId, $topicId)
     {
         try {
             $this->conn->beginTransaction();
@@ -189,11 +229,12 @@ class TeacherService {
                 FROM activities
                 JOIN topics ON activities.topicId = topics.id
                 JOIN lessons ON topics.lessonId = lessons.id
-                WHERE lessons.userId = :userId
+                WHERE lessons.userId = :userId AND topicId = :topicId
             ";
 
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':userId', $userId);
+            $stmt->bindParam(':topicId', $topicId);
             $stmt->execute();
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $this->conn->commit();
@@ -205,15 +246,168 @@ class TeacherService {
         }
     }
 
-    public function addQuestions($userId, $questions) {
+    public function getVideos($userId, $topicId)
+    {
         try {
             $this->conn->beginTransaction();
 
-            foreach ($questions as $questionData) {
+            $sql = "SELECT videos.*
+                FROM videos
+                JOIN topics ON videos.topicId = topics.id
+                JOIN lessons ON topics.lessonId = lessons.id
+                WHERE lessons.userId = :userId AND topicId = :topicId
+            ";
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':userId', $userId);
+            $stmt->bindParam(':topicId', $topicId);
+            $stmt->execute();
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $this->conn->commit();
+
+            return $data ?? null;
+        } catch (\Exception $e) {
+            $this->conn->rollBack();
+            throw new \Exception("Get activities failed" . $e->getMessage());
+        }
+    }
+
+    public function getTotalVideos($sectionId, $lessonId)
+    {
+        try {
+            $this->conn->beginTransaction();
+
+            $sql = "SELECT COUNT(videos.id) AS totalVideos
+            FROM videos
+            JOIN topics ON videos.topicId = topics.id
+            JOIN lessons ON topics.lessonId = :lessonId
+            WHERE lessons.sectionId = :sectionId GROUP BY lessons.id";
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(":sectionId", $sectionId);
+            $stmt->bindParam(":lessonId", $lessonId);
+            
+            $stmt->execute();
+            $data = $stmt->fetch(PDO::FETCH_ASSOC);
+            $this->conn->commit();
+
+            return $data ?? null;
+        } catch (\Exception $e) {
+            $this->conn->rollBack();
+            throw new \Exception("Get watched videos failed: " . $e->getMessage());
+        }
+    }
+    public function getTotalActivities($sectionId, $lessonId)
+    {
+        try {
+            $this->conn->beginTransaction();
+
+            $sql = "SELECT COUNT(activities.id) AS totalActivities
+                FROM activities
+                JOIN topics ON activities.topicId = topics.id
+                JOIN lessons ON topics.lessonId = :lessonId
+                WHERE sectionId = :sectionId GROUP BY lessons.id
+            ";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(":sectionId", $sectionId);
+            $stmt->bindParam(":lessonId", var: $lessonId);
+
+            $stmt->execute();
+            $data = $stmt->fetch(PDO::FETCH_ASSOC);
+            $this->conn->commit();
+
+            return $data ?? null;
+        } catch (\Exception $e) {
+            $this->conn->rollBack();
+            throw new \Exception("Get activities failed" . $e->getMessage());
+        }
+    }
+
+    public function getProgressReport($userId, $videoStatus, $activityStatus, $lessonId)
+    {
+        $userInfo = $this->adminService->getUser($userId);
+        $sectionId = $userInfo['sectionId'];
+        $videos = $this->getTotalVideos( $sectionId,$lessonId);
+        $activities = $this->getTotalActivities($sectionId,$lessonId); 
+        $totalVideos = $videos['totalVideos'] ?? 0;
+        $totalActivities = $activities['totalActivities'] ?? 0;
+        $watchedVideos = $this->watchedVideos($userId, $videoStatus);
+        $passedActivities = $this->passedActivities($userId, $activityStatus, $lessonId);
+
+        return [
+            'sectionId' => $sectionId,
+            'userId' => $userId,
+            'lessonId' => $lessonId ?? 0,
+            'totalVideos' => $totalVideos,
+            'watchedVideos' => $totalVideos !== 0 ? $watchedVideos : 0,
+            'totalActivities' => $totalActivities,
+            'passedActivities' => $totalActivities !== 0 ? $passedActivities : 0
+        ];
+    }
+
+
+    public function watchedVideos($userId, $videoStatus)
+    {
+        //Watched Videos of a student
+        $sql = "SELECT COUNT(*) AS watchedVideos FROM watchedVideos WHERE userId = :userId AND status = :videoStatus";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(":userId", $userId);
+        $stmt->bindParam(":videoStatus", $videoStatus);
+        $stmt->execute();
+        $watchedVideos = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $watchedVideos['watchedVideos'] ?? 0;
+    }
+
+    public function passedActivities($userId, $activityStatus, $lessonId)
+    {
+       
+        $sql = "SELECT COUNT(*) AS passedActivities FROM activityAttempts
+        JOIN activities ON activityAttempts.activityId = activities.id
+        JOIN topics ON activities.topicId = topics.id
+        JOIN lessons ON topics.lessonId = :lessonId
+        WHERE activityAttempts.userId = :userId AND activityAttempts.status = :activityStatus GROUP BY lessons.id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(":userId", $userId);
+        $stmt->bindParam(":activityStatus", $activityStatus);
+        $stmt->bindParam(":lessonId", $lessonId);
+        $stmt->execute();
+        $passedActivities = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $passedActivities['passedActivities'] ?? 0;
+    }
+
+    public function getActivity($activityId)
+    {
+        try {
+            $sql = "SELECT id, maxPassingRate, minPassingRate FROM activities WHERE id = :activityId";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(":activityId", $activityId);
+            $stmt->execute();
+            $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            return $data ?? null;
+        } catch (\Exception $e) {
+            throw new \Exception("Failed to retrieve activity. " . $e->getMessage());
+        }
+    }
+    
+
+    public function addQuestions($userId, $questions) {
+           $this->conn->beginTransaction();
+
+          try {
+           foreach ($questions as $questionData) {
                 $question = $questionData['question'];
                 $answer = $questionData['answer'];
                 $activityId = $questionData['activityId'];
                 $choices = $questionData['choices'] ?? [];
+                $activity = $this->getActivity($activityId);
+                
+                if (!$activity) {
+                    throw new \Exception("Activity is not on the list.");
+                }
                 
                 $sqlQuestion = "INSERT INTO questions (activityId, question, answer) VALUES (:activityId, :question, :answer)";
                 $stmtQuestion = $this->conn->prepare($sqlQuestion);
@@ -249,10 +443,10 @@ class TeacherService {
         }
     }
 
-    public function getAllQuestionsWithChoices($userId) {
+    public function getAllQuestionsWithChoices($userId, $sectionId, $role) {
         try {
             $this->conn->beginTransaction();
-
+    
             $sql = "
                 SELECT 
                     q.id AS questionId, 
@@ -274,15 +468,23 @@ class TeacherService {
                 JOIN 
                     lessons l ON t.lessonId = l.id
                 LEFT JOIN 
-                    choices c ON q.id = c.questionId AND c.userId = :userId
-                WHERE 
-                    l.userId = :userId
-                ORDER BY 
-                    q.id, c.id;
+                    choices c ON q.id = c.questionId
             ";
+            
+            if ($role === RoleEnums::TEACHER->value) {
+                $sql .= " WHERE l.userId = :userId";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bindParam(":userId", $userId);
+            } elseif ($role === RoleEnums::STUDENT->value) {
+                $sql .= " WHERE l.sectionId = :sectionId";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bindParam(":sectionId", $sectionId);
+            } else {
+                throw new \Exception("Invalid role provided.");
+            }
     
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(":userId", $userId);
+            $sql .= " ORDER BY q.id, c.id";
+            
             $stmt->execute();
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
@@ -300,7 +502,7 @@ class TeacherService {
                         'choices' => []
                     ];
                 }
-
+    
                 if ($row['choiceId'] !== null) {
                     $questions[$questionId]['choices'][] = [
                         'choiceId' => $row['choiceId'],
@@ -313,10 +515,10 @@ class TeacherService {
             return array_values($questions);
         } catch (\Exception $e) {
             $this->conn->rollBack();
-            throw new \Exception("Get questions failed." . $e->getMessage());
+            throw new \Exception("Get questions failed: " . $e->getMessage());
         }
     }
-
+    
     public function addAward($activityId, $filePath, $awardName, $criteria, $awardType)
     {
         try {
@@ -350,13 +552,6 @@ class TeacherService {
         try {
             $this->conn->beginTransaction();
 
-            $sql = "SELECT activities.*
-                FROM activities
-                JOIN topics ON activities.topicId = topics.id
-                JOIN lessons ON topics.lessonId = lessons.id
-                WHERE lessons.userId = :userId
-            ";
-
             $sql = "SELECT awards.*
                 FROM awards
                 JOIN activities ON awards.activityId = activities.id
@@ -374,7 +569,7 @@ class TeacherService {
             return $data ?? null;
         } catch (\Exception $e) {
             $this->conn->rollBack();
-            throw new \Exception("Get activities failed" . $e->getMessage());
+            throw new \Exception("Get awards failed" . $e->getMessage());
         }
     }  
 
@@ -397,5 +592,4 @@ class TeacherService {
             throw new \Exception("Upload Video failed" . $e->getMessage());
         }
     }
-    
 }

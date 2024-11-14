@@ -21,7 +21,15 @@ $routesWithParams = [
     '/api/v1/getTopics',
     '/api/v1/getActivities',
     '/api/v1/getQuestions',
-    '/api/v1/getAwards'
+    '/api/v1/getAwards',
+    '/api/v1/getVideos',
+    '/api/v1/finishVideo',
+    '/api/v1/progressReport',
+    '/api/v1/getSectionLessons',
+    '/api/v1/getLessonTopics',
+    '/api/v1/getTopicActivities',
+    '/api/v1/getTopicVideos',
+    '/api/v1/getActivityQuestions'
 ];
 
 if (!array_key_exists($path, $apiRoutes)) {

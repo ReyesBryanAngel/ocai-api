@@ -9,8 +9,16 @@ class OcaiUtilities {
         exit;
     }
 
-    function dd($variable) {
+    public function dd($variable) {
         echo json_encode($variable, JSON_PRETTY_PRINT);
         die();
     }
+
+    public function getPassingScore($totalQuestions, $minPassingRate) {
+        return ceil(($minPassingRate / 100) * $totalQuestions);
+    }
+
+    public function getCountsOfVideosAndActivities($videos, $activities) {
+        return count(array_merge($videos, $activities));
+    }    
 }

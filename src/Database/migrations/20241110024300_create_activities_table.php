@@ -24,6 +24,9 @@ final class CreateActivitiesTable extends AbstractMigration
         ->addForeignKey('topicId', 'topics', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
         ->addColumn('activityName', 'string', ['limit' => 100, 'null' => true])
         ->addColumn('timeLimit', 'time', ['null' => true])
+        ->addColumn('minPassingRate', 'integer', ['null' => true])
+        ->addColumn('maxPassingRate', 'integer', ['null' => true])
+        ->addTimestamps()
         ->create();
     }
 }

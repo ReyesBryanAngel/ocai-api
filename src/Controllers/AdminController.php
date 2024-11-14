@@ -5,7 +5,7 @@ use src\Database\Database;
 use src\Services\AdminService;
 use src\Utils\OcaiUtilities;
 use src\Services\JsonWebTokenService;
-use src\Utils\Enums;
+use src\Enums\RoleEnums;
 
 class AdminController {
 
@@ -27,7 +27,7 @@ class AdminController {
         $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
         $payload = json_decode(file_get_contents('php://input'), true);
 
-        if ($userData->role != Enums::ADMIN->value) {
+        if ($userData->role != RoleEnums::ADMIN->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',
@@ -50,7 +50,7 @@ class AdminController {
         $payload = json_decode(file_get_contents('php://input'), true);
         $encryptedPassword = password_hash($payload['password'], PASSWORD_DEFAULT);
 
-        if ($userData->role != Enums::ADMIN->value) {
+        if ($userData->role != RoleEnums::ADMIN->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',
@@ -276,7 +276,7 @@ class AdminController {
             }
         }
  
-        if ($userData->role != Enums::ADMIN->value) {
+        if ($userData->role != RoleEnums::ADMIN->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',
@@ -308,7 +308,7 @@ class AdminController {
             }
         }
  
-        if ($userData->role != Enums::ADMIN->value) {
+        if ($userData->role != RoleEnums::ADMIN->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',

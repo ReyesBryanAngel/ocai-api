@@ -1,6 +1,6 @@
 <?php
 namespace src\Services;
-use src\Utils\Enums;
+use src\Enums\RoleEnums;
 use src\Utils\OcaiUtilities;
 use PDO;
 
@@ -76,7 +76,7 @@ class AdminService {
                 ':password'
             ];
             
-            if ($role === Enums::STUDENT->value) {
+            if ($role === RoleEnums::STUDENT->value) {
                 $fields[] = 'sectionId';
                 $fields[] = 'guardianName';
                 $fields[] = 'guardianContact';
@@ -102,7 +102,7 @@ class AdminService {
             $stmt->bindParam(':username', $username);
             $stmt->bindParam(':password', $password);
     
-            if ($role === Enums::STUDENT->value) {
+            if ($role === RoleEnums::STUDENT->value) {
                 $stmt->bindParam(':sectionId', $sectionId);
                 $stmt->bindParam(':guardianName', $guardianName);
                 $stmt->bindParam(':guardianContact', $guardianContact);
@@ -360,7 +360,7 @@ class AdminService {
             $sql = "UPDATE users SET isArchived = true WHERE id IN ($placeholders) AND role != ?";
             $stmt = $this->conn->prepare($sql);
 
-            $stmt->execute([...$userIds, Enums::ADMIN->value]);
+            $stmt->execute([...$userIds, RoleEnums::ADMIN->value]);
             $this->conn->commit();
         } catch (\Exception $e) {
             $this->conn->rollBack();
@@ -381,7 +381,7 @@ class AdminService {
             $sql = "UPDATE users SET isArchived = false WHERE id IN ($placeholders) AND role != ?";
             $stmt = $this->conn->prepare($sql);
 
-            $stmt->execute([...$userIds, Enums::ADMIN->value]);
+            $stmt->execute([...$userIds, RoleEnums::ADMIN->value]);
             $this->conn->commit();
         } catch (\Exception $e) {
             $this->conn->rollBack();

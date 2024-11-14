@@ -2,11 +2,12 @@
 namespace src\Controllers;
 
 use src\Database\Database;
+use src\Enums\ResultEnums;
 use src\Services\TeacherService;
 use src\Services\AdminService;
 use src\Utils\OcaiUtilities;
 use src\Services\JsonWebTokenService;
-use src\Utils\Enums;
+use src\Enums\RoleEnums;
 
 class TeacherController {
     private $db;
@@ -31,7 +32,7 @@ class TeacherController {
         $payload = json_decode(file_get_contents('php://input'), true);
         $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
 
-        if ($userData->role != Enums::TEACHER->value) {
+        if ($userData->role !== RoleEnums::TEACHER->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',
@@ -40,10 +41,20 @@ class TeacherController {
         }
         
         $lessonName = $payload['lessonName'] ?? null;
+        $sectionId = $payload['sectionId'] ?? null;
         $description = $payload['description'] ?? null;
         $coverPic = $payload['coverPic'] ?? null;
+        $section = $this->teacherService->getSection($sectionId);
 
-        $this->teacherService->addLesson($userData->id, $lessonName, $description, $coverPic);
+        if (!$section) {
+            $this->utils->jsonResponse([
+                'code' => 400,
+                'status' => 'failed',
+                'message' => 'Section not found.'
+            ], 400);
+        }
+
+        $this->teacherService->addLesson($userData->id, $sectionId, $lessonName, $description, $coverPic);
 
         $this->utils->jsonResponse([
             'code' => 201,
@@ -54,17 +65,18 @@ class TeacherController {
 
     public function getLessons()
     {
-        $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
+        $userData = $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
+        $sectionId = $_GET['sectionId'] ?? null;
 
-        if ($userData->role != Enums::TEACHER->value) {
+        if ($userData->role !== RoleEnums::TEACHER->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',
-                'message' => 'User that is not a teacher cannot perform such action.'
+                'message' => "User that is not a " . RoleEnums::TEACHER->value . " cannot perform such action."
             ], 400);
         }
 
-        $lessons = $this->teacherService->getLessons($userData->id);
+        $lessons = $this->teacherService->getLessons($userData->id, $sectionId);
 
         $this->utils->jsonResponse([
             'code' => 200,
@@ -91,7 +103,7 @@ class TeacherController {
             ], 404);
         }
 
-        if ($userData->role != Enums::TEACHER->value) {
+        if ($userData->role !== RoleEnums::TEACHER->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',
@@ -111,16 +123,17 @@ class TeacherController {
     public function getTopics()
     {
         $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
+        $lessonId = $_GET['lessonId'] ?? null;
 
-        if ($userData->role != Enums::TEACHER->value) {
+        if ($userData->role !== RoleEnums::TEACHER->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',
-                'message' => 'User that is not a teacher cannot perform such action.'
+                'message' => "User that is not a " . RoleEnums::TEACHER->value . " cannot perform such action."
             ], 400);
         }
 
-        $topics = $this->teacherService->getTopics($userData->id);
+        $topics = $this->teacherService->getTopics($userData->id, $lessonId);
 
         $this->utils->jsonResponse([
             'code' => 200,
@@ -137,9 +150,10 @@ class TeacherController {
         $topicId = $payload['topicId'] ?? null;
         $activityName = $payload['activityName'] ?? null;
         $timeLimit = $payload['timeLimit'] ?? null;
+        $minPassingRate = $payload['minPassingRate'] ?? null;
         $topic = $this->teacherService->getTopic($topicId);
 
-        if ($userData->role != Enums::TEACHER->value) {
+        if ($userData->role !== RoleEnums::TEACHER->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',
@@ -155,7 +169,7 @@ class TeacherController {
             ], 404);
         }
 
-        $this->teacherService->addActivity($topicId, $activityName, $timeLimit);
+        $this->teacherService->addActivity($topicId, $activityName, $minPassingRate, $timeLimit);
 
         $this->utils->jsonResponse([
             'code' => 201,
@@ -168,16 +182,40 @@ class TeacherController {
     public function getActivities()
     {
         $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
+        $topicId = $_GET['topicId'] ?? null;
 
-        if ($userData->role != Enums::TEACHER->value) {
+        if ($userData->role !== RoleEnums::TEACHER->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',
-                'message' => 'User that is not a teacher cannot perform such action.'
+                'message' => "User that is not a " . RoleEnums::TEACHER->value . " cannot perform such action."
             ], 400);
         }
 
-        $activities = $this->teacherService->getActivities($userData->id);
+        $activities = $this->teacherService->getActivities($userData->id, $topicId);
+
+        $this->utils->jsonResponse([
+            'code' => 200,
+            'status' => 'success',
+            'message' => 'Successfully get activities.',
+            'data' => $activities
+        ], 200);
+    }
+
+    public function getVideos()
+    {
+        $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
+        $topicId = $_GET['topicId'] ?? null;
+
+        if ($userData->role !== RoleEnums::TEACHER->value) {
+            $this->utils->jsonResponse([
+                'code' => 400,
+                'status' => 'failed',
+                'message' => "User that is not a " . RoleEnums::TEACHER->value . " cannot perform such action."
+            ], 400);
+        }
+
+        $activities = $this->teacherService->getVideos($userData->id, $topicId);
 
         $this->utils->jsonResponse([
             'code' => 200,
@@ -192,7 +230,7 @@ class TeacherController {
         $questions = $payload['questions'] ?? [];
         $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
 
-        if ($userData->role != Enums::TEACHER->value) {
+        if ($userData->role !== RoleEnums::TEACHER->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',
@@ -221,15 +259,15 @@ class TeacherController {
     {
         $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
 
-        if ($userData->role != Enums::TEACHER->value) {
+        if (!$userData->role !== RoleEnums::TEACHER->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',
-                'message' => 'User that is not a teacher cannot perform such action.'
+                'message' => "User that is not a " . RoleEnums::TEACHER->value . " cannot perform such action."
             ], 400);
         }
 
-        $questions = $this->teacherService->getAllQuestionsWithChoices($userData->id);
+        $questions = $this->teacherService->getAllQuestionsWithChoices($userData->id, $userData->sectionId, $userData->role);
 
         $this->utils->jsonResponse([
             'code' => 200,
@@ -243,7 +281,7 @@ class TeacherController {
     {
         $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
 
-        if ($userData->role != Enums::TEACHER->value) {
+        if ($userData->role !== RoleEnums::TEACHER->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',
@@ -272,7 +310,7 @@ class TeacherController {
     {
         $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
 
-        if ($userData->role != Enums::TEACHER->value) {
+        if ($userData->role !== RoleEnums::TEACHER->value) {
             $this->utils->jsonResponse([
                 'code' => 400,
                 'status' => 'failed',
@@ -285,7 +323,7 @@ class TeacherController {
         $this->utils->jsonResponse([
             'code' => 200,
             'status' => 'success',
-            'message' => 'Successfully get questions.',
+            'message' => 'Successfully get awards.',
             'data' => $awards
         ], 200);
     }
@@ -305,7 +343,7 @@ class TeacherController {
                 ], 404);
             }
 
-            if ($userData->role != Enums::TEACHER->value) {
+            if ($userData->role !== RoleEnums::TEACHER->value) {
                 $this->utils->jsonResponse([
                     'code' => 400,
                     'status' => 'failed',
@@ -335,5 +373,33 @@ class TeacherController {
             }
         }
     }
-    
+
+    public function progressReport()
+    {
+        $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
+        $userId = $_GET['userId'];
+        $lessonId = $_GET['lessonId'];
+
+        if ($userData->role !== RoleEnums::TEACHER->value) {
+            $this->utils->jsonResponse([
+                'code' => 400,
+                'status' => 'failed',
+                'message' => "User that is not a " . RoleEnums::TEACHER->value . " cannot perform such action."
+            ], 400);
+        }
+
+        $progressReport = $this->teacherService->getProgressReport(
+            $userId, 
+            ResultEnums::WATCHED->value, 
+            ResultEnums::PASSED->value,
+            $lessonId
+        );
+
+        $this->utils->jsonResponse([
+            'code' => 200,
+            'status' => 'success',
+            'message' => 'Successfully get student progress report.',
+            'data' => $progressReport
+        ], 200);
+    }
 }

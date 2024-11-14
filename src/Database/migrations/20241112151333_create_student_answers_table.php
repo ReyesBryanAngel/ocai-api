@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Phinx\Migration\AbstractMigration;
 
-final class CreateLessonsTable extends AbstractMigration
+final class CreateStudentAnswersTable extends AbstractMigration
 {
     /**
      * Change Method.
@@ -19,16 +19,16 @@ final class CreateLessonsTable extends AbstractMigration
      */
     public function change(): void
     {
-        $table = $this->table('lessons', ['signed' => false]);
+        $table = $this->table('studentAnswers', ['signed' => false]);
         
         $table->addColumn('userId', 'integer',  ['signed' => false])
               ->addForeignKey('userId', 'users', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
-              ->addColumn('sectionId', 'integer',  ['signed' => false])
-              ->addForeignKey('sectionId', 'sections', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
-              ->addColumn('lessonName', 'string', ['limit' => 100, 'null' => true])
-              ->addColumn('description', 'text', ['null' => true])
-              ->addColumn('coverPic', 'string', ['null' => true])
-              ->addColumn('isVisible', 'boolean', ['default' => false])
+              ->addColumn('activityId', 'integer',  ['signed' => false])
+              ->addForeignKey('activityId', 'activities', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
+              ->addColumn('questionId', 'integer',  ['signed' => false])
+              ->addForeignKey('questionId', 'questions', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
+              ->addColumn('answer', 'string', ['limit' => 18, 'null' => true])
+              ->addColumn('result', 'enum', ['values' => ['Correct', 'Incorrect'], 'null' => true ])
               ->addTimestamps()
               ->create();
     }
