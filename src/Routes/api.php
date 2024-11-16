@@ -44,6 +44,9 @@ $apiRoutes = [
     '/api/v1/uploadVideo' => [new TeacherController, 'uploadVideo'],
     '/api/v1/getVideos' => [new TeacherController(), 'getVideos'],
     '/api/v1/progressReport' => [new TeacherController, 'progressReport'],
+    '/api/v1/setSchedule' => [new TeacherController, 'setSchedule'],
+    '/api/v1/assignSectionSchedule' => [new TeacherController, 'assignSectionSchedule'],
+    '/api/v1/getSectionSchedule' => [new TeacherController, 'getSectionSchedule'],
 
     //Student
     '/api/v1/answerQuestion' => [new StudentController, 'answerQuestion'],
@@ -55,7 +58,6 @@ $apiRoutes = [
     '/api/v1/getTopicVideos' => [new StudentController, 'getTopicVideos'],
     '/api/v1/getSectionLessons' => [new StudentController, 'getSectionLessons'],
     '/api/v1/getLessonTopics' => [new StudentController, 'getLessonTopics'],
-    '/api/v1/getActivityQuestions' => [new StudentController, 'getActivityQuestions'],
-    
+    '/api/v1/getActivityQuestions' => [new StudentController, 'getActivityQuestions']
 ];
 

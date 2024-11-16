@@ -402,4 +402,114 @@ class TeacherController {
             'data' => $progressReport
         ], 200);
     }
+
+    public function setSchedule()
+    {
+        $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
+        $payload = json_decode(file_get_contents('php://input'), true);
+
+        $title = $payload['title'];
+        $description = $payload['description'];
+        $dayOfWeek = $payload['dayOfWeek'];
+        $time = $payload['time'];
+        $startDate = $payload['startDate'];
+        $endDate = $payload['endDate'];
+        $isRecurring = $payload['isRecurring'];
+        $sectionId = $payload['sectionId'];
+        $section = $this->teacherService->getSection($sectionId);
+
+        if ($userData->role !== RoleEnums::TEACHER->value) {
+            $this->utils->jsonResponse([
+                'code' => 400,
+                'status' => 'failed',
+                'message' => "User that is not a " . RoleEnums::TEACHER->value . " cannot perform such action."
+            ], 400);
+        }
+
+        if (!$section) {
+            $this->utils->jsonResponse([
+                'code' => 404,
+                'status' => 'failed',
+                'message' => 'Section not found.'
+            ], 404);
+        }
+
+        $this->teacherService->setSchedule(
+            $userData->id, 
+            $title, 
+            $description, 
+            $dayOfWeek, 
+            $time, 
+            $startDate, 
+            $endDate, 
+            $isRecurring
+        );
+
+        $this->utils->jsonResponse([
+            'code' => 201,
+            'status' => 'success',
+            'message' => 'Schedule has been created.'
+        ], 201);
+    }
+
+    public function assignSectionSchedule()
+    {
+        $this->jwtService->verifyToken($this->jwtService->getBearerToken());
+        $payload = json_decode(file_get_contents('php://input'), true);
+        $scheduleId = $payload['scheduleId'] ?? null;
+        $sectionId = $payload['sectionId'] ?? null;
+        $section = $this->teacherService->getSection($sectionId);
+
+        if (!$section) {
+            $this->utils->jsonResponse([
+                'code' => 404,
+                'status' => 'failed',
+                'message' => 'Section not found.'
+            ], 404);
+        }
+
+        $this->teacherService->assignSectionSchedule($scheduleId, $sectionId);
+
+        $this->utils->jsonResponse([
+            'code' => 201,
+            'status' => 'success',
+            'message' => 'Schedule has been assigned to ' . $section['name'] . ' section.'
+        ], 201);
+    }
+
+    public function getSectionSchedule()
+    {
+        $userData = $this->jwtService->verifyToken($this->jwtService->getBearerToken());
+        $schedules = $this->teacherService->getSectionSchedule($userData->id);
+
+        $formattedSchedules = array_map(function ($schedule) {
+            return [
+                'id' => $schedule['scheduleId'],
+                'userId' => $schedule['userId'],
+                'title' => $schedule['title'],
+                'description' => $schedule['description'],
+                'dayOfWeek' => $schedule['dayOfWeek'],
+                'time' => $schedule['time'],
+                'startDate' => $schedule['startDate'],
+                'endDate' => $schedule['endDate'],
+                'isRecurring' => $schedule['isRecurring'],
+                // 'created_at' => $schedule['created_at'],
+                // 'updated_at' => $schedule['updated_at'],
+                'section' => [
+                    'id' => $schedule['sectionId'],
+                    'name' => $schedule['sectionName'],
+                    // 'grade' => $schedule['sectionGrade'],
+                    'created_at' => $schedule['sectionCreatedAt'],
+                ],
+            ];
+        }, $schedules);
+
+        $this->utils->jsonResponse([
+            'code' => 200,
+            'status' => 'success',
+            'message' => 'Successfully retrieved schedules',
+            'data' => $formattedSchedules
+        ], 200);
+    }
+
 }

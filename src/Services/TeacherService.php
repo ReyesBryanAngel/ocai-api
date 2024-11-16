@@ -24,7 +24,7 @@ class TeacherService {
         try {
             $this->conn->beginTransaction();
 
-            $sql = "SELECT id FROM sections WHERE id = :sectionId";
+            $sql = "SELECT id, name FROM sections WHERE id = :sectionId";
             $stmt = $this->conn->prepare($sql);
 
             $stmt->bindParam(":sectionId", $sectionId);
@@ -592,4 +592,125 @@ class TeacherService {
             throw new \Exception("Upload Video failed" . $e->getMessage());
         }
     }
+
+    public function setSchedule(
+        $userId, 
+        $title, 
+        $description, 
+        $dayOfWeek, 
+        $time, 
+        $startDate, 
+        $endDate, 
+        $isRecurring
+    )
+    {
+        try {
+            $this->conn->beginTransaction();
+
+            $sql = "INSERT INTO schedules (
+                userId,
+                title,
+                description,
+                dayOfWeek,
+                time,
+                startDate,
+                endDate,
+                isRecurring
+            ) VALUES (
+                :userId,
+                :title,
+                :description,
+                :dayOfWeek,
+                :time,
+                :startDate,
+                :endDate,
+                :isRecurring
+            )";
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(":userId", $userId);
+            $stmt->bindParam(":title", $title);
+            $stmt->bindParam(":description", $description);
+            $stmt->bindParam(":dayOfWeek", $dayOfWeek);
+            $stmt->bindParam(":time", $time);
+            $stmt->bindParam(":startDate", $startDate);
+            $stmt->bindParam(":endDate", $endDate);
+            $stmt->bindParam(":isRecurring", $isRecurring);
+            $stmt->execute();
+
+            $this->conn->commit();
+        } catch (\Exception $e) {
+            $this->conn->rollBack();
+            throw new \Exception("Set schedule failed." . $e->getMessage());
+        }
+    }
+
+    public function assignSectionSchedule($scheduleId, $sectionId)
+    {
+        try {
+            $this->conn->beginTransaction();
+
+            $sql = "INSERT INTO scheduleSections (
+                scheduleId,
+                sectionId
+            ) VALUES (
+                :scheduleId,
+                :sectionId
+            )";
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(":scheduleId", $scheduleId);
+            $stmt->bindParam(":sectionId", $sectionId);
+            $stmt->execute();
+
+            $this->conn->commit();
+
+            return $this->conn->lastInsertId();
+        } catch (\Exception $e) {
+            $this->conn->rollBack();
+            throw new \Exception("Set section schedule failed." . $e->getMessage());
+        }
+    }
+
+    public function getSectionSchedule($userId)
+    {
+        try {
+            $this->conn->beginTransaction();
+    
+            $sql = "SELECT 
+                        schedules.id AS scheduleId, 
+                        schedules.userId, 
+                        schedules.title, 
+                        schedules.description, 
+                        schedules.dayOfWeek, 
+                        schedules.time, 
+                        schedules.startDate, 
+                        schedules.endDate, 
+                        schedules.isRecurring, 
+                        -- schedules.created_at, 
+                        -- schedules.updated_at,
+                        sections.id AS sectionId,
+                        sections.name AS sectionName,
+                        -- sections.grade AS sectionGrade,
+                        sections.created_at AS sectionCreatedAt
+                    FROM schedules 
+                    JOIN scheduleSections ON schedules.id = scheduleSections.scheduleId 
+                    JOIN sections ON scheduleSections.sectionId = sections.id 
+                    WHERE schedules.userId = :userId";
+    
+            $stmt = $this->conn->prepare($sql);
+    
+            $stmt->bindParam(":userId", $userId);
+            $stmt->execute();
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+            $this->conn->commit();
+    
+            return $data ?? [];
+        } catch (\Exception $e) {
+            $this->conn->rollBack();
+            throw new \Exception("Get schedules failed." . $e->getMessage());
+        }
+    }
+    
 }
